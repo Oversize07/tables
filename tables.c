@@ -25,9 +25,12 @@ TODO: introduce a promp parameter version where you can print a table given the 
 #include <string.h>
 #include <unistd.h>
 #define MAX_HEADER_LENGHT_NAME 30
+#define FILE_NOT_FOUND 1000
+
+
 
 // Interface
-typedef struct{
+struct mt{
   char **header; // MAtrix header fields
   char **mtx;    // Matrix
   int nc;        // Numbers of rows 
@@ -35,16 +38,18 @@ typedef struct{
   // Statistical data
   int nchars;    // Number of chars in the matrix
   int nnumbers;  // Number of numbers in the matrix
-} mt;
+};
 
-typedef struct mt *matrix;  
+typedef struct mt *matrix;   // Pointer to the matrix
+
+
 // Prototipes
 void menu_options();
 int create_table();
 int print_to_destination(matrix M, FILE *fp);
 int max_length_row(char **mtx, int rl);
 int free_table(matrix M);
-
+int error_handler(int e);
 
 
 
@@ -65,7 +70,7 @@ int main(){
 \n Do you wan to overwrite it? [Y/n]");
         scanf("%c",a);
         if !(a != 1) // do something
-	free_table(M);  // Libera la matrice  
+	free_table(M);  // Free the table
       }
       matrix M = create_table(&M);
       check_if_defined = 1;
@@ -80,7 +85,7 @@ int main(){
 \n Do you wan to overwrite it? [Y/n]");
         scanf("%c",a);
         if !(a != 1) // do something
-	free_table(M);  // Libera la matrice  
+	free_table(M);  // Free the table 
       }
       matrix M = load_table(M);
       check_if_defined = 1;
@@ -120,9 +125,9 @@ int main(){
   return 0;
 }
 
-// Implementation 
+/* --------------------------- Implementation ---------------------------- */
 
-// Functoin that prints all the available functionalities
+// Function that prints all the available functionalities
 void menu_options(){
   printf("Welcome to table generator 1.0\n");
   printf("What you want to do?\n\n");
@@ -135,20 +140,22 @@ void menu_options(){
 
 
 // Functions thta allows to create a table
-matrix create_table(matrix M){
-  M = (mt * )malloc(sizeof(matrix));
+// TODO: fill the table
+matrix create_table(){
+  matrix M = malloc(sizeof M);
   int i,nc;
   char *txtn; // Char read from input
   // Head fields
   printf("\nInsert how many columns this table will have: ");
   scanf("%d",&nc);
 
-  matrix.header = (char **) malloc(nc * sizeof(char*));
+  M->header = (char **) malloc(nc * sizeof(char*));
+  M->nc = nc;
   
   for(i = 0; i < nc; i++){
     printf("\nInserisci nome header no.%d> ",i);
     scanf("%s",txtn);
-    matrix.header[i] = strdup(txtn); // Inserting in the header table
+    M->header[i] = strdup(txtn); // Inserting in the header table
   }
     
   // Rows definition
@@ -173,6 +180,13 @@ int max_length_row(char **mtx, int rl){
 
 // Functions that allows to print the table on the screen
 int print_to_destination(matrix M,FILE *fp){
+  if(fp == NULL){
+    error_handler(FILE_NOT_FOUND);
+    return -1;
+  }
+  int longest_length = max_length_row(M->mtx,M->nr);
+
+  
   // printf("%c",how_many," "); print n. spaces
   return 0;
 }
@@ -183,3 +197,11 @@ int free_table(matrix M){
   return 0;
 }
 
+int error_handler(int e){
+  switch(e){
+  case FILE_NOT_FOUND:
+    printf("\n error 1000: unable to open the file.\n");
+    return 0;
+  }
+
+}
