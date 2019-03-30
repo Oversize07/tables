@@ -9,7 +9,9 @@ The data structure will be:
 - A pointer that points to the struct that contains everything
 - A structure that contains everithing
 - (TODO) Second structure that contains statistical data about the table 
-
+- (TODO) Function to insert new fields in the martix
+- (TODO) During the allocation of the table, expand it's size by 1/2 of the imput given
+         by the user
 
  Version 2.0
 TODO: introduce a new  program in C that allows to insert new options to the program.
@@ -50,7 +52,7 @@ int print_to_destination(matrix M, FILE *fp);
 int max_length_row(char **mtx, int rl);
 int free_table(matrix M);
 int error_handler(int e);
-
+void update_char_number(char *string, matrix M);
 
 
 // Client
@@ -143,7 +145,12 @@ void menu_options(){
 // TODO: fill the table
 matrix create_table(){
   matrix M = malloc(sizeof M);
-  int i,nc;
+
+  // Initializing statistical data
+  M->nchars = 0;
+  M->nnumbers = 0;
+    
+  int i,j,nc,nr;
   char *txtn; // Char read from input
   // Head fields
   printf("\nInsert how many columns this table will have: ");
@@ -160,10 +167,38 @@ matrix create_table(){
     
   // Rows definition
   
+  printf("\nHow many fields do you want to insert? ");
+  scanf("%d",&nr);
+  M->nr = nr;
+
   // Inserting data in the fields
+  //Possible not saving because of not allocation to the string
+  for(j = 0; j < nr;j++){
+    for(i = 0; i < nc; i++){
+      printf("\nInserisci nome header no.%d> ",i);
+      scanf("%s",txtn);
+      update_char_number(txtn,M);
+      M->mtx[i][j] = strdup(txtn); // Inserting in the header table
+    }
+  }
+  
 
   return M;
 }
+
+
+void update_char_number(char *string, matrix M){
+  int i,count = 0;
+  for (i = 0; string[i]!='\0';i++){
+    // checks if string[i] is a integer
+    if(string[i] >= '0' && string[i] <= '9' )
+      M->nnumbers++;
+    else M->nchars++;
+  }
+}
+
+
+
 
 
 // Function that find the length of the longest elements in a vector of strings
