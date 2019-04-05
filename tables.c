@@ -32,13 +32,13 @@ TODO: introduce a promp parameter version where you can print a table given the 
 #include <unistd.h>
 #include <stdlib.h>
 #define MAX_HEADER_LENGHT_NAME 30
-#define FILE_NOT_FOUND 1000
-
+#define ERROR_FILE_NOT_FOUND 1000
+#define ERROR_ALLOCATION 1001
 
 
 // Interface
 struct mt{
-  char **header; // MAtrix header fields
+  char **header; // Matrix header fields
   char ***mtx;   // Matrix of pointers to string
   int nc;        // Numbers of rows 
   int nr;        // Number of columns
@@ -143,11 +143,12 @@ Function that prints all the available functionalities
   printf("Welcome to table generator 1.0\n");
   printf("What you want to do?\n\n");
   printf("1) Create table.\n");
-  printf("2) Load table.");
+  printf("2) Load table.\n");
   printf("3) Print table on screen.\n");
-  printf("4) Print table on file.");
+  printf("4) Print table on file.\n");
   printf("0) Exit.\n\n");
-}
+  printf(">");
+ }
 
 
 /*
@@ -159,11 +160,11 @@ populate it
 */
 
 matrix create_table(){
-  matrix M = malloc(sizeof M);
+  matrix MI = malloc(sizeof MI);
 
   // Initializing statistical data
-  M->nchars = 0;
-  M->nnumbers = 0;
+  MI->nchars = 0;
+  MI->nnumbers = 0;
     
   int i,j,nc,nr;
   char *txtn; // Char read from input
@@ -171,39 +172,42 @@ matrix create_table(){
   printf("\nInsert how many columns this table will have: ");
   scanf("%d",&nc);
 
-  M->header = (char **) malloc(nc * sizeof(char*));
-  M->max_lenght_column = (int *) malloc(nc*sizeof(int));
-  M->nc = nc;
+  if((MI->header = (char **) malloc(nc*sizeof(char *))) == NULL)
+    error_handler(ERROR_ALLOCATION);
+
+  if((MI->max_lenght_column = (int *) malloc(nc*sizeof(int))) == NULL)
+    error_handler(ERROR_ALLOCATION);
+  MI->nc = nc;
   
   for(i = 0; i < nc; i++){
     printf("\nInserisci nome header no.%d> ",i);
     scanf("%s",txtn);
-    M->header[i] = strdup(txtn); // Inserting in the header table
-    M->max_lenght_column[i] = strlen(txtn); // Initialization of the vector of length
+    MI->header[i] = strdup(txtn); // Inserting in the header table
+    MI->max_lenght_column[i] = strlen(txtn); // Initialization of the vector of length
   }
     
   // Rows definition
   
   printf("\nHow many fields do you want to insert? ");
   scanf("%d",&nr);
-  M->nr = nr;
-  M->mtx = (char ***) malloc(nc * sizeof(char*)); // Allocating the rows
+  MI->nr = nr;
+  MI->mtx = (char ***) malloc(nc * sizeof(char*)); // Allocating the rows
   
   // Inserting data in the fields
   //Possible not saving because of not allocation to the string
   for(i = 0; i < nr;i++){
-    M->mtx[i] = (char **) malloc(nc * sizeof(char *)); //Allocating a matrix that contains elements of  a single row
+    MI->mtx[i] = (char **) malloc(nc * sizeof(char *)); //Allocating a matrix that contains elements of  a single row
     for(j = 0; j < nc; j++){
       printf("\nInserisci nome header no.%d> ",i);
       scanf("%s",txtn);
-      update_char_number(txtn,M,j);
-      M->mtx[i][j] = malloc(sizeof(char)); // Allocating space for the pointer to string
-      M->mtx[i][j] = strdup(txtn);
+      update_char_number(txtn,MI,j);
+      MI->mtx[i][j] = malloc(sizeof(char)); // Allocating space for the pointer to string
+      MI->mtx[i][j] = strdup(txtn);
     }
   }
   
 
-  return M;
+  return MI;
 }
 
 
@@ -246,7 +250,7 @@ matrix load_table(){
 */
 int print_to_destination(matrix M,FILE *fp){
   if(fp == NULL){
-    error_handler(FILE_NOT_FOUND);
+    error_handler(ERROR_FILE_NOT_FOUND);
     return -1;
   }
   int i,j,how_many_spaces;
@@ -289,7 +293,7 @@ int free_table(matrix M){
 
 
 /*
-  Function: 
+  Function: error_handler
 ----------------------------------------
 Function that print messages of errors specifically for this code
 
@@ -298,9 +302,12 @@ Function that print messages of errors specifically for this code
 */
 int error_handler(int e){
   switch(e){
-  case FILE_NOT_FOUND:
+  case ERROR_FILE_NOT_FOUND:
     printf("\n error 1000: unable to open the file.\n");
-    return 0;
+    break;
+  case ERROR_ALLOCATION:
+    printf("\n Unable to allocate memory. \n");
+    break;
   }
-
+  return 0;
 }
