@@ -67,7 +67,7 @@ int main(){
   int choice,check_if_defined = 0;
   menu_options();
   scanf("%d",&choice);
-  FILE *fp; // Used if user decide to use a file to either save or print on the screen
+  FILE *fp; // Used if user decide to save the table
   matrix M;
   char ans = '1'; // contains the choice about the question below
   
@@ -125,10 +125,9 @@ int main(){
     case 4:
       print_to_destination(M,stdout);
     default:
-      goto exit;
+      break;
     }
   }
- exit:
   return 0;
 }
 
@@ -160,12 +159,15 @@ populate it
 */
 
 matrix create_table(){
-  matrix MI = malloc(sizeof MI);
-
+  matrix MI;
+  if((MI = malloc(sizeof MI)) == NULL)
+    error_handler(ERROR_ALLOCATION);
+  
+  
   // Initializing statistical data
-  MI->nchars = 0;
+  MI->nchars = 50;
   MI->nnumbers = 0;
-    
+ 
   int i,j,nc,nr;
   char *txtn; // Char read from input
   // Head fields
@@ -174,13 +176,14 @@ matrix create_table(){
 
   if((MI->header = (char **) malloc(nc*sizeof(char *))) == NULL)
     error_handler(ERROR_ALLOCATION);
-
+  
   if((MI->max_lenght_column = (int *) malloc(nc*sizeof(int))) == NULL)
     error_handler(ERROR_ALLOCATION);
   MI->nc = nc;
-  
+
+  // Defining header fields
   for(i = 0; i < nc; i++){
-    printf("\nInserisci nome header no.%d> ",i);
+    printf("\nInsert header name no.%d> ",i);
     scanf("%s",txtn);
     MI->header[i] = strdup(txtn); // Inserting in the header table
     MI->max_lenght_column[i] = strlen(txtn); // Initialization of the vector of length
@@ -205,7 +208,6 @@ matrix create_table(){
       MI->mtx[i][j] = strdup(txtn);
     }
   }
-  
 
   return MI;
 }
