@@ -64,14 +64,14 @@ void update_char_number(char *string, matrix M, int i);
 // Client
 
 int main(){
-  int choice,check_if_defined = 0;
-  menu_options();
-  scanf("%d",&choice);
+  int choice = 1,check_if_defined = 0;
   FILE *fp; // Used if user decide to save the table
   matrix M;
   char ans = '1'; // contains the choice about the question below
   
-  while(1){
+  while(choice != '0'){
+    menu_options();
+    scanf("%d",&choice);    
     switch(choice){
 
     // CREATE TABLE
@@ -82,7 +82,7 @@ int main(){
         scanf("%c",&ans);
         if (!(ans != '1')) // do something
 	free_table(M);  // Free the table
-      }
+	}
       M = create_table();
       check_if_defined = 1;
       break;
@@ -160,12 +160,12 @@ populate it
 
 matrix create_table(){
   matrix MI;
-  if((MI = malloc(sizeof MI)) == NULL)
+  if((MI = malloc(sizeof *MI)) == NULL)
     error_handler(ERROR_ALLOCATION);
   
   
   // Initializing statistical data
-  MI->nchars = 50;
+  MI->nchars = 0;
   MI->nnumbers = 0;
  
   int i,j,nc,nr;
@@ -174,8 +174,11 @@ matrix create_table(){
   printf("\nInsert how many columns this table will have: ");
   scanf("%d",&nc);
 
-  if((MI->header = (char **) malloc(nc*sizeof(char *))) == NULL)
+  char **h; 
+  if((h = malloc(nc*sizeof(char *))) == NULL)
     error_handler(ERROR_ALLOCATION);
+
+  MI->header = h;
   
   if((MI->max_lenght_column = (int *) malloc(nc*sizeof(int))) == NULL)
     error_handler(ERROR_ALLOCATION);
@@ -201,7 +204,7 @@ matrix create_table(){
   for(i = 0; i < nr;i++){
     MI->mtx[i] = (char **) malloc(nc * sizeof(char *)); //Allocating a matrix that contains elements of  a single row
     for(j = 0; j < nc; j++){
-      printf("\nInserisci nome header no.%d> ",i);
+      printf("\nInsert field no.%d [Row:%d]\n> ",j,i);
       scanf("%s",txtn);
       update_char_number(txtn,MI,j);
       MI->mtx[i][j] = malloc(sizeof(char)); // Allocating space for the pointer to string
