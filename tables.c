@@ -16,7 +16,7 @@ The data structure will be:
 - (TODO) Function to insert new fields in the martix
 - (TODO) During the allocation of the table, expand it's size by 1/2 of the imput given
          by the user
-- (TODO) Introduce log file
+
  Version 2.0
 TODO: introduce a new  program in C that allows to insert new options to the program.
 Use a vector of pointers to strings and introduce a for loop to the menu_options function
@@ -31,7 +31,6 @@ TODO: introduce a promp parameter version where you can print a table given the 
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
-#include <unistd.h>
 #define DEF_S 32
 #define MAX_HEADER_LENGHT_NAME 30
 #define ERROR_FILE_NOT_FOUND 1000
@@ -57,9 +56,8 @@ typedef struct mt *matrix;   // Pointer to the matrix
 void menu_options();
 matrix create_table();
 matrix load_table();
-int print_to_screen(matrix M);
-int print_to_file(matrix M, char *file_name);
-matrix drop_table(matrix M);
+int print_to_destination(matrix M, FILE *fp);
+int drop_table(matrix M);
 int error_handler(int e, char *message);
 void update_char_number(char *string, matrix M, int i);
 
@@ -70,33 +68,27 @@ int main(){
   int choice = 1,check_if_defined = 0;
   FILE *fp; // Used if user decide to save the table
   matrix M;
-  char ans; // contains the choice about the question below
+  char ans = 'y'; // contains the choice about the question below
   printf("\n\nWelcome to table generator 1.0\n");
-  while(choice != 0){
+  while(choice != '0'){
     menu_options();
     scanf("%d",&choice);    
     switch(choice){
-      // EXIT
-    case 0:
-      printf("\nOkay, see you soon!\n\n");
-      break;
-      
+
     // CREATE TABLE
     case 1:
       if(check_if_defined == 1){
-
-	do{
-	  printf("Seems that another table was already defined.\n Do you wan to overwrite it? [Y/n]");
-	  scanf("%c",&ans);
-	  ans = tolower(ans);
-        }while(!(ans == 'y' || ans == 'n'));
-
-	if (!(ans != 'y')){ // The user want to drop the previous table
-	  M = drop_table(M);  // Free the table
-	  M = create_table();
-	  check_if_defined = 1;
+        do{
+        printf("Seems that another table was already defined.\n Do you wan to overwrite it? [Y/n]");
+        scanf("%c",&ans);
+        ans = tolower(ans);
+        }while(ans != 'y' || ans != 'n' );
+        if (!(ans != 'y')){ // The user want to drop the previous table
+	drop_table(M);  // Free the table
+	M = create_table();
+	check_if_defined = 1;
         }else{ // The user doesn't want to overwrite the table
-	  printf("Okay, then I will not do anything");
+	printf("Okay, then I will not do anything");
         }
       }else{      
         M = create_table();
@@ -108,19 +100,17 @@ int main(){
       // LOAD TABLE
     case 2:
       if(check_if_defined == 1){
-
-	do{
-	  printf("Seems that another table was already defined.\n Do you wan to overwrite it? [Y/n]");
-	  scanf("%c",&ans);
-	  ans = tolower(ans);
-        }while(!(ans == 'y' || ans == 'n' ));
-
-	if (!(ans != 'y')){ // // The user want to drop the previous table
-	  M = drop_table(M);  // Free the table 
-	  if(M = load_table()) break; // Something went wrong
-	  check_if_defined = 1;
+        do{
+        printf("Seems that another table was already defined.\n Do you wan to overwrite it? [Y/n]");
+        scanf("%c",&ans);
+        ans = tolower(ans);
+        }while(ans != 'y' || ans != 'n' );
+        if (!(ans != 'y')){ // // The user want to drop the previous table
+	drop_table(M);  // Free the table 
+	if(M = load_table()) break; // Something went wrong
+	check_if_defined = 1;
         }else // The user doesn't want to overwrite the table
-	  printf("Okay, then I will not do anything");
+	printf("Okay, then I will not do anything");
       }else{ // Table not previously defined
         if(M = load_table()) break; // Something went wrong
         check_if_defined = 1;
@@ -128,60 +118,58 @@ int main(){
       break;
 
 
-      //PRINT TABLE ON FILE
+      //PRINT TABLE ON SCREEN
     case 3:
-      if(check_if_defined != 1){
+      if(check_if_defined == 1){
         do{
-	  printf("Seems that no table was defined.\n Do you wan to create one? [Y/n]");
-	  scanf("%c",&ans);
-	  ans = tolower(ans);
-        }while(!(ans == 'y' || ans == 'n'));
-
-	if (ans == 'y'){ // do something
-	  M = create_table();  // Create the matrix
-	  check_if_defined = 1;	
-	  char *file_name;
-	  printf("Insert filename: ");
-	  scanf("%s",file_name);
-	  if(print_to_file(M,file_name))  break; // Something went wrong
+        printf("Seems that no table was defined.\n Do you wan to create one? [Y/n]");
+        scanf("%c",&ans);
+        ans = tolower(ans);
+        }while(ans != 'y' || ans != 'n' );
+        if (!(ans != 'y')){ // do something
+	M = create_table();  // Create the matrix
+	check_if_defined = 1;	
+	char *file_name;
+	printf("Insert filename: ");
+	scanf("%s",file_name);
+	fp = fopen(file_name,"w");
+	if(print_to_destination(M,fp))  break; // Something went wrong
+        }else{ // The user doesn't want to create a table
+	printf("Okay, then I will not print anything");
         }
-	else // The user doesn't want to create a table
-	  printf("Okay, then I will not print anything");
-        
-      }else{ // Table was previously defined
+      }else{ // Table not previously defined
         char *file_name;
         printf("Insert filename: ");
         scanf("%s",file_name);
-        if(print_to_file(M,file_name)) break; // Something went wrong
+        fp = fopen(file_name,"w");
+        if(print_to_destination(M,fp)) break; // Something went wrong
       }
       break;
       
 
-      // PRINT TABLE ON SCREEN
+      // PRINT TABLE ON FILE
     case 4:
-      if(check_if_defined != 1){
-
-	do{
-	  printf("Seems that no table was defined.\n Do you wan to create it? [Y/n]");
-	  scanf("%c",&ans);
-	  ans = tolower(ans);
-        }while(!(ans == 'y' || ans == 'n'));
-
-	if (ans == 'y'){ // do something
-	  M = create_table();  // Create the matrix
-	  check_if_defined = 1;
-        }else // The user doesn't want to create table
-	  printf("Okay, then I will not do anything");
-        
-      }else
-	  if(print_to_screen(M)) break; // Something went wrong
-      
+      if(check_if_defined == 1){
+        do{
+        printf("Seems that no table was defined.\n Do you wan to create one? [Y/n]");
+        scanf("%c",&ans);
+        ans = tolower(ans);
+        }while(ans != 'y' || ans != 'n' );
+        if (!(ans != 'y')){ // do something
+	M = create_table();  // Create the matrix
+	check_if_defined = 1;
+	if(print_to_destination(M,stdout)) break; // Something went wrong
+	  
+        }else{ // The user doesn't want to create table
+	printf("Okay, then I will not do anything");
+        }
+      }else        
+        if(print_to_destination(M,stdout)) break; // Something went wrong
       break;
 
       // DEFAULT: do nothing
     default:
       break;
-    
     }
   }
   return 0;
@@ -224,17 +212,11 @@ matrix create_table(){
   M->nchars = 0;
   M->nnumbers = 0;
  
-  int i,j,nc,nr = 0;
+  int i,j,nc,nr;
   char txtn[DEF_S]; // Char read from input
   // Header fields
-  printf("\nInsert how many fields this table will have: ");
-  if(scanf("%d",&nc) != 1)
-    do{
-      scanf("%*[^\n]%*1[\n]"); // Ignore all characters untill /n then ignore /n char
-      printf("\n Please insert an integer \n>");
-      
-    }while(!scanf("%d",&nc));
-    
+  printf("\nInsert how many columns this table will have: ");
+  scanf("%d",&nc);
  
   if((M->header = malloc(nc*sizeof(char *))) == NULL){
     error_handler(ERROR_ALLOCATION,"Header allocation failed in function: create_table");
@@ -249,7 +231,7 @@ matrix create_table(){
 
   // Defining header fields
   for(i = 0; i < nc; i++){
-    printf("\nInsert header name [%d]> ",i+1);
+    printf("\nInsert header name no.%d> ",i);
     scanf("%s",txtn);
     M->header[i] = strdup(txtn); // Inserting in the header table
     M->max_lenght_column[i] = strlen(txtn); // Initialization of the vector of length
@@ -257,13 +239,8 @@ matrix create_table(){
     
   // Rows definition
   
-  printf("\nHow many rows do you want to insert? ");
-  if(scanf("%d",&nr) != 1)
-    do{
-      scanf("%*[^\n]%*1[\n]"); // Ignore all characters untill /n then ignore /n char
-      printf("\n Please insert an integer \n>");
-    }while(!scanf("%d\n",&nr));
-    
+  printf("\nHow many fields do you want to insert? ");
+  scanf("%d",&nr);
   M->nr = nr;
   M->mtx = (char ***) malloc(nc * sizeof(char*)); // Allocating the rows
   
@@ -373,113 +350,40 @@ matrix load_table(FILE *fp){
 
 
 /*
-  Function: print_to_screen 
+  Function: print_to destination 
 ----------------------------------------
  Functions that allows to print the table on the screen
 */
-int print_to_screen(matrix M){
-  int i,j,h,how_many_spaces,count = 1;
-  for(i = 0;i<M->nc;i++) count+=M->max_lenght_column[i]+3; // length table orizontally in chars 
-
-  h = M->max_lenght_column[0] + 2; // how many ─ will print
+int print_to_destination(matrix M,FILE *fp){
+  if(fp == NULL){
+    error_handler(ERROR_FILE_NOT_FOUND,NULL);
+    return -1;
+  }
   
-  printf("\n\n ┌");
-  for(i = 1,j = 1;i<count-1;i++,h--)
-    if(h == 0){ // print a "t" 
-      h = M->max_lenght_column[j] + 3; // how many ─ will print again
-      printf("┬");
-      j++;
-    }else 
-      printf("─");
- 
-  printf("┐\n");
-  
+  int i,j,how_many_spaces;
   // printing header
   for(i = 0; i<M->nc;i++){
     how_many_spaces = M->max_lenght_column[i] - strlen(M->header[i]);
-    printf(" │ %s%*.s",M->header[i],how_many_spaces,' ');
-    //printf("%*.c",how_many_spaces,' '); //print n. spaces 
+    printf("| %s",M->header[i]);
+    printf("%*c",how_many_spaces,' '); //print n. spaces 
   }
-  printf(" │\n "); // end of the row 
+  printf("|\n"); // end of the row 
 
-  // Printing lines
-  h = M->max_lenght_column[0] + 2; // how many ─ will print
 
-  printf("├");
-  for(i = 1,j = 1;i<count-1;i++,h--)
-    if(h == 0){ // Print a cross
-      h = M->max_lenght_column[j] + 3; // how many ─ will print again
-      printf("┼"); 
-      j++;
-    }else printf("─");
-  printf("┤\n");
-  
   // printing table
   
   for(i = 0; i<M->nr; i++){
     for(j = 0; j<M->nc; j++){
-      how_many_spaces = M->max_lenght_column[j] - strlen(M->mtx[i][j]);
-      printf(" │ %s%*.s",M->mtx[i][j],how_many_spaces,' ');
-      //printf("%*.c",how_many_spaces,' '); //print n. spaces 
+      how_many_spaces = M->max_lenght_column[i] - strlen(M->mtx[i][j]);
+      printf("| %s",M->mtx[i][j]);
+      printf("%*c",how_many_spaces,' '); //print n. spaces 
     }
-    printf(" │\n"); // end of the row 
+    printf("|\n"); // end of the row 
   }
-
-  h = M->max_lenght_column[0] + 2; // how many ─ will print
-
-  printf(" └");
-  for(i = 1,j = 1;i<count-1;i++,h--)
-    if(h == 0){ // print an upside down "t"
-      h = M->max_lenght_column[j] + 3; // how many ─ will print again
-      printf("┴");
-      j++;
-    }else printf("─");
-  printf("┘\n\n");
-  return 0;
-}
-
-
-
-
-/*
-  Function: print_to_file
-----------------------------------------
- Functions that allows to print the table on the screen
-*/
-int print_to_file(matrix M,char *file_name){
-  /*if(fp == NULL){
-    error_handler(ERROR_FILE_NOT_FOUND,NULL);
-    return -1;
-    }*/
-  
-  FILE *fp = fopen(file_name,"w");
-  if(fp == NULL){
-    char *command;
-    command = strcat("touch ",file_name);
-    system(command);
-    fp = fopen(file_name,"w");
-  }
-  
-  // Saving sizes on the first row
-  fprintf(fp,"%d %d/n",M->nr,M->nc);
-  
-  int i,j;
-  
-  // Saving header
-  for(i = 0; i<M->nc;i++){
-    fprintf(fp,"%s\n",M->header[i]); 
-  } 
-
-
-  // Saving table
-  
-  for(i = 0; i<M->nr; i++)
-    for(j = 0; j<M->nc; j++)
-      fprintf(fp,"%s\n",M->mtx[i][j]);
-    
    
   return 0;
 }
+
 
 /*
   Function: drop_table
@@ -488,7 +392,7 @@ Function that deallocate the matrix/table
 TODO: check if not empty for each
 */
 
-matrix drop_table(matrix M){
+int drop_table(matrix M){
   int i,j;
   // Deallocating max_lenght_columns
   free(M->max_lenght_column);
@@ -509,7 +413,7 @@ matrix drop_table(matrix M){
   // Deallocating the struct
   free(M);
 
-  return NULL;
+  return 0;
 }
 
 
