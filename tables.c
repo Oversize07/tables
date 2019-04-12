@@ -80,12 +80,13 @@ int main(){
     // CREATE TABLE
     case 1:
       if(check_if_defined == 1){
-
-	do{
-	  printf("Seems that another table was already defined.\n Do you wan to overwrite it? [Y/n]");
+         
+       do{
+         scanf("%*[^\n]%*1c");
+	printf("Seems that another table was already defined.\n Do you wan to overwrite it? [Y/n]");
 	  scanf("%c",&ans);
 	  ans = tolower(ans);
-        }while(!(ans == 'y' || ans == 'n'));
+       }while(!(ans == 'y' || ans == 'n'));
 
 	if (!(ans != 'y')){ // The user want to drop the previous table
 	  M = drop_table(M);  // Free the table
@@ -106,6 +107,7 @@ int main(){
       if(check_if_defined == 1){
 
 	do{
+	  scanf("%*[^\n]%*1c");
 	  printf("Seems that another table was already defined.\n Do you wan to overwrite it? [Y/n]");
 	  scanf("%c",&ans);
 	  ans = tolower(ans);
@@ -128,6 +130,7 @@ int main(){
     case 3:
       if(check_if_defined != 1){
         do{
+	scanf("%*[^\n]%*1c");
 	  printf("Seems that no table was defined.\n Do you wan to create one? [Y/n]");
 	  scanf("%c",&ans);
 	  ans = tolower(ans);
@@ -139,6 +142,24 @@ int main(){
 	  char *file_name;
 	  printf("Insert filename: ");
 	  scanf("%s",file_name);
+	  if( access(file_name, F_OK) != -1 ){
+	    // There is another file with that name
+	    do{
+	      scanf("%*[^\n]%*1c");
+	      printf("Seems that there is already another file with that name.\n Do you wan to overwrite it? [Y/n]");
+	      scanf("%c",&ans);
+	      ans = tolower(ans);
+	    }while(!(ans == 'y' || ans == 'n'));
+
+	    if (ans == 'y'){ // do something
+	      char *command;
+	      command = strcat("rm ",file_name);
+	      system(command);
+	    }else{
+	      printf("Okay, then i will not do anything");
+	      break;
+	    }
+	  }	    
 	  if(print_to_file(M,file_name))  break; // Something went wrong
         }
 	else // The user doesn't want to create a table
@@ -148,6 +169,24 @@ int main(){
         char *file_name;
         printf("Insert filename: ");
         scanf("%s",file_name);
+        if( access(file_name, F_OK) != -1 ){
+	    // There is another file with that name
+	    do{
+	      scanf("%*[^\n]%*1c");
+	      printf("Seems that there is already another file with that name.\n Do you wan to overwrite it? [Y/n]");
+	      scanf("%c",&ans);
+	      ans = tolower(ans);
+	    }while(!(ans == 'y' || ans == 'n'));
+
+	    if (ans == 'y'){ // do something
+	      char *command;
+	      command = strcat("rm ",file_name);
+	      system(command);
+	    }else{
+	      printf("Okay, then i will not do anything");
+	      break;
+	    }
+        }
         if(print_to_file(M,file_name)) break; // Something went wrong
       }
       break;
@@ -158,6 +197,7 @@ int main(){
       if(check_if_defined != 1){
 
 	do{
+	  scanf("%*[^\n]%*1c");
 	  printf("Seems that no table was defined.\n Do you wan to create it? [Y/n]");
 	  scanf("%c",&ans);
 	  ans = tolower(ans);
@@ -226,8 +266,7 @@ matrix create_table(){
   if(scanf("%d",&nc) != 1)
     do{
       scanf("%*[^\n]%*1[\n]"); // Ignore all characters untill /n then ignore /n char
-      printf("\n Please insert an integer \n>");
-      
+      printf("\n Please insert an integer \n>");    
     }while(!scanf("%d",&nc));
     
  
@@ -446,17 +485,12 @@ int print_to_file(matrix M,char *file_name){
     error_handler(ERROR_FILE_NOT_FOUND,NULL);
     return -1;
     }*/
-  
+
   FILE *fp = fopen(file_name,"w");
-  if(fp == NULL){
-    char *command;
-    command = strcat("touch ",file_name);
-    system(command);
-    fp = fopen(file_name,"w");
-  }
+  
   
   // Saving sizes on the first row
-  fprintf(fp,"%d %d/n",M->nr,M->nc);
+  fprintf(fp,"%d %d\n",M->nr,M->nc);
   
   int i,j;
   
@@ -472,7 +506,7 @@ int print_to_file(matrix M,char *file_name){
     for(j = 0; j<M->nc; j++)
       fprintf(fp,"%s\n",M->mtx[i][j]);
     
-   
+  fclose(fp);
   return 0;
 }
 
