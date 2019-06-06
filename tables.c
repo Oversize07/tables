@@ -58,7 +58,7 @@ int print_to_file(matrix M, char *file_name);
 matrix drop_table(matrix M);
 int error_handler(int e, char *message);
 void update_char_number(char *string, matrix M, int i);
-
+int query(matrix M);
 
 // Client
 
@@ -115,12 +115,22 @@ int main(){
 
 	if (!(ans != 'y')){ // // The user want to drop the previous table
 	  M = drop_table(M);  // Free the table 
-	  if(M = load_table()) break; // Something went wrong
+	  if((M = load_table())) break; // Something went wrong
 	  check_if_defined = 1;
         }else // The user doesn't want to overwrite the table
 	  printf("Okay, then I will not do anything");
-      }else{ // Table not previously defined
-        if(M = load_table()) break; // Something went wrong
+      }else{ // Table not previously defined, proceed to load the matrix from file
+	char *file_name = malloc(MAX_HEADER_LENGHT_NAME*sizeof(char));
+	printf("Insert filename: ");
+        scanf("%s",file_name);
+	FILE *fp;
+	if(((fp = fopen(file_name,"r"))) == NULL ){
+	  printf("Ops, your file was not found.. \n");
+	  error_handler(ERROR_FILE_NOT_FOUND,NULL);
+	  break;
+	}
+	
+        if((M = load_table(fp)) == NULL) break; // Something went wrong
         check_if_defined = 1;
       }
       break;
@@ -128,6 +138,7 @@ int main(){
 
       //PRINT TABLE ON FILE
     case 3:
+      ans = 'n';
       if(check_if_defined != 1){
         do{
 	scanf("%*[^\n]%*1c");
@@ -139,10 +150,10 @@ int main(){
 	if (ans == 'y'){ // do something
 	  M = create_table();  // Create the matrix
 	  check_if_defined = 1;	
-	  char *file_name;
+	  char *file_name = malloc(MAX_HEADER_LENGHT_NAME*sizeof(char));
 	  printf("Insert filename: ");
 	  scanf("%s",file_name);
-	  if( access(file_name, F_OK) != -1 ){
+	  if( access(file_name, F_OK) ){
 	    // There is another file with that name
 	    do{
 	      scanf("%*[^\n]%*1c");
@@ -152,21 +163,25 @@ int main(){
 	    }while(!(ans == 'y' || ans == 'n'));
 
 	    if (ans == 'y'){ // do something
-	      char *command;
+	      char *command = malloc(MAX_HEADER_LENGHT_NAME*sizeof(char));
 	      command = strcat("rm ",file_name);
 	      system(command);
 	    }else{
 	      printf("Okay, then i will not do anything");
 	      break;
 	    }
-	  }	    
+	  }else{
+	    char *command = malloc(MAX_HEADER_LENGHT_NAME*sizeof(char));
+	    command = strcat("touch ", file_name);
+	    system(command);
+	  }
 	  if(print_to_file(M,file_name))  break; // Something went wrong
         }
 	else // The user doesn't want to create a table
 	  printf("Okay, then I will not print anything");
         
       }else{ // Table was previously defined
-        char *file_name;
+        char *file_name = malloc(MAX_HEADER_LENGHT_NAME*sizeof(char));
         printf("Insert filename: ");
         scanf("%s",file_name);
         if( access(file_name, F_OK) != -1 ){
@@ -214,6 +229,29 @@ int main(){
       
       break;
 
+      // QUERY THE MATRIX
+    case 5:
+      if(check_if_defined != 1){
+
+	do{
+	  scanf("%*[^\n]%*1c");
+	  printf("Seems that no table was defined.\n Do you wan to create it? [Y/n]");
+	  scanf("%c",&ans);
+	  ans = tolower(ans);
+        }while(!(ans == 'y' || ans == 'n'));
+
+	if (ans == 'y'){ // do something
+	  M = create_table();  // Create the matrix
+	  check_if_defined = 1;
+        }else // The user doesn't want to create table
+	  printf("Okay, then I will not do anything");
+        
+      }else
+	  if(query(M)) break; // Something went wrong
+      
+      break;
+      
+
       // DEFAULT: do nothing
     default:
       break;
@@ -236,6 +274,7 @@ Function that prints all the available functionalities
   printf("2) Load table.\n");
   printf("3) Print table on file.\n");
   printf("4) Print table on screen.\n");
+  printf("5) Query. (Alpha)\n");
   printf("0) Exit.\n\n");
   printf(">");
  }
@@ -346,17 +385,11 @@ TODO: define format to read from file
 next nc rows: header name fields
 the next nr*nc rows in the file there will be the fields of the matrix
 */
-matrix load_table(FILE *fp){
-  if(fp == NULL){
-    error_handler(ERROR_FILE_NOT_FOUND,NULL);
-    return NULL;
-  }
-
-  
+matrix load_table(FILE *fp){  
   matrix M;
 
   // Allocating new structure 
-  if((M = malloc(sizeof *M)) == NULL){
+  if( ((M = malloc(sizeof *M))) == NULL){
     error_handler(ERROR_ALLOCATION,"Structure allocation failed in function: load_table");
     return NULL;
   }
@@ -367,35 +400,35 @@ matrix load_table(FILE *fp){
   
   // Header fields
   
-  fscanf(fp,"%d %d", &nr,&nc); // reading sizes
+  fscanf(fp,"%d %d\n", &nr,&nc); // reading sizes from the first row of the file 
 
   M->nc = nc;
   M->nr = nr;
   
-  if((M->header = malloc(nc*sizeof(char *))) == NULL){
+  if( ((M->header = malloc(nc*sizeof(char *)))) == NULL){
     error_handler(ERROR_ALLOCATION,"Header allocation failed in function: load_table");
     return NULL;
   }
 
-  if((M->max_lenght_column = (int *) malloc(nc*sizeof(int))) == NULL){
+  if( ((M->max_lenght_column = (int *) malloc(nc*sizeof(int)))) == NULL){
     error_handler(ERROR_ALLOCATION,"max_lenght_column allocation failed in function: load_table");
     return NULL;
   }
 
   // Defining header fields
   for(i = 0; i < nc; i++){
-    fscanf(fp,"%s",txtn);
+    fscanf(fp,"%s\n",txtn);
     M->header[i] = strdup(txtn); // Inserting in the header table
     M->max_lenght_column[i] = strlen(txtn); // Initialization of the vector of length
   }
-    
+
 
   M->mtx = (char ***) malloc(nc * sizeof(char*)); // Allocating the rows
  
   for(i = 0; i < nr;i++){
     M->mtx[i] = (char **) malloc(nc * sizeof(char *)); //Allocating a matrix that contains elements of  a single row
     for(j = 0; j < nc; j++){ // reading single row      
-      fscanf(fp,"%s",txtn);
+      fscanf(fp,"%s\n",txtn);
       M->mtx[i][j] = strdup(txtn);
     }
   }
@@ -487,8 +520,7 @@ int print_to_file(matrix M,char *file_name){
     }*/
 
   FILE *fp = fopen(file_name,"w");
-  
-  
+    
   // Saving sizes on the first row
   fprintf(fp,"%d %d\n",M->nr,M->nc);
   
@@ -542,7 +574,18 @@ matrix drop_table(matrix M){
 }
 
 
+/*
+  Function: query
+----------------------------------------
+Function that allows to query the matrix
+*/
 
+int query(matrix M){
+  return -1; // Its still alpha tho
+
+  
+
+}
 /*
   Function: error_handler
 ----------------------------------------
