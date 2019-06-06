@@ -28,6 +28,7 @@ TODO: introduce a promp parameter version where you can print a table given the 
 #include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "query.h"
 #define DEF_S 32
 #define MAX_HEADER_LENGHT_NAME 30
 #define ERROR_FILE_NOT_FOUND 1000
@@ -582,6 +583,8 @@ Function that allows to query the matrix
 
 int query(matrix M){
   return -1; // Its still alpha tho
+
+  
 
   
 
